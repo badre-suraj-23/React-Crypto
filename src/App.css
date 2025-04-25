@@ -36,3 +36,17 @@
     transform: rotate(360deg);
   }
 }
+/* App.css */
+.light {
+  background-color: white;
+  color: black;
+  min-height: 100vh;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.dark {
+  background-color: #121212;
+  color: white;
+  min-height: 100vh;
+  transition: background-color 0.3s, color 0.3s;
+}
