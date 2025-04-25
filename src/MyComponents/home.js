@@ -7,8 +7,7 @@ function Home() {
   const [sortAsc, setSortAsc] = useState(true);
 
   useEffect(() => {
-    // Replace this with the actual Energiswap API endpoint
-    const apiURL = (process.env.REACT_APP_API_URL); // example placeholder
+    const apiURL = (process.env.REACT_APP_API_URL); 
 
     fetch(apiURL)
       .then((res) => res.json())
@@ -52,8 +51,8 @@ function Home() {
                   <img
                     src={`/icons/${token.symbol.toUpperCase()}.svg`}
                     alt={token.name}
-                    width="24"
-                    height="24"
+                    width="28"
+                    height="28"
                     onError={(e) => e.target.style.display = 'none'} // hide if icon not found
                   />
                 </td>

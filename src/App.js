@@ -4,7 +4,6 @@ import Home from './MyComponents/home';
 import Wallet from './MyComponents/wallet';
 import Navbar from './MyComponents/navbar';
 import { ThemeProvider } from './context/ThemeContext';
-// import WalletStatusBanner from './MyComponents/WalletStatusBanner';
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 

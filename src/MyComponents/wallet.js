@@ -1,117 +1,202 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { Web3Provider } from '@ethersproject/providers';
 import { formatEther } from 'ethers';
 import metamaskLogo from '../assets/metamask.png';
+import { ThemeContext } from '../context/ThemeContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-export default function Wallet() {
+export default function CryptoWallet() {
+  const { theme } = useContext(ThemeContext);
   const [account, setAccount] = useState(null);
   const [balance, setBalance] = useState(0);
   const [usdValue, setUsdValue] = useState(0);
   const [ethPrice, setEthPrice] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
 
+  // Formatting function
   const formatCurrency = (num) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num || 0);
+    new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num || 0);
 
   const formatNumber = (num) =>
-    new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(num || 0);
+    new Intl.NumberFormat('en-US', { 
+      maximumFractionDigits: 4,
+      minimumFractionDigits: 1 
+    }).format(num || 0);
 
+  // Wallet connect/disconnect
   const connectWallet = async () => {
-    if (window.ethereum) {
-      try {
-        const [selectedAccount] = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        setAccount(selectedAccount);
-      } catch (err) {
-        console.error('User rejected request', err);
-      }
-    } else {
-      alert('MetaMask not installed!');
+    if (!window.ethereum) {
+      alert('Please install MetaMask!');
+      return;
+    }
+
+    try {
+      const [account] = await window.ethereum.request({ 
+        method: 'eth_requestAccounts' 
+      });
+      setAccount(account);
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Error connecting:', error);
     }
   };
 
-  // ✅ useCallback for stable function reference
-  const fetchBalance = useCallback(async (address) => {
-    if (!window.ethereum) return; // Ensure Ethereum is available
-    const provider = new Web3Provider(window.ethereum);
-    
-    try {
-      const balanceInWei = await provider.getBalance(address);
-      
-      // Check if balance is valid
-      if (balanceInWei && balanceInWei.toString() !== '0x00') {
-        const etherValue = parseFloat(formatEther(balanceInWei));
-        setBalance(etherValue);
+  const disconnectWallet = () => {
+    setAccount(null);
+    setBalance(0);
+    setUsdValue(0);
+    setIsConnected(false);
+  };
 
+  // Fetch balance and price
+  const fetchBalance = useCallback(async (address) => {
+    try {
+      const provider = new Web3Provider(window.ethereum);
+      const balanceWei = await provider.getBalance(address);
+      const ethBalance = parseFloat(formatEther(balanceWei));
+      
+      if (!isNaN(ethBalance)) {
+        setBalance(ethBalance);
         if (ethPrice) {
-          setUsdValue(etherValue * ethPrice);
+          setUsdValue(ethBalance * ethPrice);
         }
-      } else {
-        // Handle case when balance is zero or invalid
-        setBalance(0);
-        setUsdValue(0);
       }
     } catch (error) {
       console.error('Error fetching balance:', error);
-      setBalance(0);
-      setUsdValue(0);
     }
   }, [ethPrice]);
 
   const fetchEthPrice = useCallback(async () => {
     try {
-      const response = await fetch((process.env.REACT_APP_API_URL));
+      const response = await fetch(
+        process.env.REACT_APP_COINGECKO_API || 
+        'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=ethereum'
+      );
       const data = await response.json();
-      const ethAsset = data.find((asset) => asset.symbol === 'ETH');
-      
-      if (ethAsset && ethAsset.price_usd) {
-        setEthPrice(ethAsset.price_usd);
-        if (balance) {
-          setUsdValue(balance * ethAsset.price_usd);
-        }
+      if (data[0]?.current_price) {
+        setEthPrice(data[0].current_price);
       }
     } catch (error) {
-      console.error('Error fetching price:', error);
+      console.error('Error fetching ETH price:', error);
     }
-  }, [balance]);
+  }, []);
 
+  // Effects
   useEffect(() => {
+    const handleAccountsChanged = (accounts) => {
+      if (accounts.length === 0) disconnectWallet();
+      else setAccount(accounts[0]);
+    };
+
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
-        setAccount(accounts[0]);
-        fetchBalance(accounts[0]);
-      });
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
     }
-  }, [fetchBalance]);
+
+    return () => {
+      if (window.ethereum) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (account) {
-      fetchEthPrice();
       fetchBalance(account);
+      fetchEthPrice();
     }
   }, [account, fetchBalance, fetchEthPrice]);
 
-  return (
-    <div className="container d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
-      <div className="text-center">
-        <img
-          src={metamaskLogo}
-          alt="MetaMask Logo"
-          className="img-fluid mb-4"
-          style={{ maxWidth: '150px' }}
-        />
-        <h2 className="mb-4">METAMASK</h2>
+  useEffect(() => {
+    // Ensure USD value is updated when ethPrice or balance changes
+    if (ethPrice && balance) {
+      setUsdValue(balance * ethPrice);
+    }
+  }, [ethPrice, balance]);
 
-        {!account ? (
-          <button className="btn btn-success" onClick={connectWallet}>
-            Connect Wallet
-          </button>
-        ) : (
-          <div className="card shadow p-4 bg-light">
-            <p><strong>Account:</strong> {account.slice(0, 6)}...{account.slice(-4)}</p>
-            <p><strong>ETH Balance:</strong> {formatNumber(balance)} ETH</p>
-            <p><strong>$ USD Value:</strong> {formatCurrency(usdValue)}</p>
+  // Theme styling
+  const cardStyle = {
+    borderRadius: '20px',
+    border: theme === 'dark' ? '1px solid #444' : 'none',
+    background: theme === 'dark' ? '#1a1a1a' : '#fff',
+    color: theme === 'dark' ? '#fff' : '#000',
+  };
+
+  const textColor = theme === 'dark' ? '#fff' : '#000';
+  const mutedTextColor = theme === 'dark' ? '#b0b0b0' : '#666'; // Lighter muted text color for better visibility in dark mode
+
+  return (
+    <div className="container d-flex justify-content-center align-items-center vh-100">
+      <div className="text-center">
+        <img 
+          src={metamaskLogo} 
+          alt="MetaMask" 
+          className="mb-4"
+          style={{ width: '100px' }}
+        />
+
+        <div className="card p-4 shadow-lg" style={{ ...cardStyle, width: '400px' }}>
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="d-flex align-items-center">
+              <div 
+                className="status-indicator"
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: isConnected ? '#28a745' : '#dc3545',
+                  marginRight: '10px'
+                }}
+              ></div>
+              <h5 className="m-0" style={{ color: textColor }}>Energi Network</h5>
+            </div>
+            {isConnected && (
+              <button 
+                className="btn btn-sm btn-outline-danger"
+                onClick={disconnectWallet}
+              >
+                Disconnect
+              </button>
+            )}
           </div>
-        )}
+
+          {isConnected ? (
+            <>
+              <div className="my-4">
+                <h3 className="text-primary">{formatNumber(balance)} ETH</h3>
+                <h2 className="text-success">{formatCurrency(usdValue)}</h2>
+              </div>
+
+              <div className="wallet-info text-start">
+                <div className="d-flex align-items-center mb-3">
+                  <span className="text-muted" style={{ color: mutedTextColor }}></span>
+                  <span className="ms-2" style={{ color: textColor }}>
+                    {account.slice(0, 6)}...{account.slice(-4)}
+                  </span>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <span className="text-muted" style={{ color: mutedTextColor }}></span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="py-4">
+              <button 
+                className="btn btn-lg btn-success px-5 py-3"
+                onClick={connectWallet}
+              >
+                Connect Wallet
+              </button>
+              <p className="text-muted mt-3" style={{ color: mutedTextColor }}>
+                Please connect your MetaMask wallet
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
