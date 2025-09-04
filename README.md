@@ -1,73 +1,164 @@
-1. Home (Display Tokens)
-Objective: Display a list of tokens in a table sorted by price.
+📊 Cryptocurrency Tracker
 
-Features:
-Columns:
+A React + Django REST Framework based web application that allows users to:
 
-Icon: Display the token’s icon.
+Monitor cryptocurrency prices (USD & INR).
 
-Ticker Symbol: Show the symbol (e.g., BTC, ETH, etc.).
+Connect and view wallet balances (MetaMask).
 
-Name: Show the token name (e.g., Bitcoin, Ethereum, etc.).
+Stay updated with latest crypto news.
 
-Price in USD: Show the current price of the token in USD, formatted correctly.
+Register/login with secure JWT authentication.
 
-Sorting:
+Switch between light/dark theme.
 
-The table should be sortable based on each column.
+📋 Project Overview
 
-By default, the table should be sorted by price in USD.
+Home: Token listing with sorting by price, symbol, or name.
 
-API Endpoint:
-You will use the Energieswap API to fetch the tokens and their data. This will allow you to display the tokens and their current prices dynamically.
+Wallet: MetaMask integration to show balances + USD/INR value.
 
-Components:
-Table: Display token data in a table format with the above columns.
+News: Latest crypto news with pagination & infinite scroll.
 
-Sorting Functionality: Implement sorting for each column (price, ticker, etc.) using React's state and effect hooks.
+Authentication: JWT-based secure login & registration.
 
-Flow:
-On page load, fetch the list of tokens from the Energiswap API.
+Theme System: Light/Dark toggle with persistent storage.
 
-Display the tokens in a table.
+Visuals: Animated floating crypto logos + responsive UI.
 
-Allow the user to sort the table by price (ascending/descending), ticker symbol, or name.
+🛠️ Technologies Used
 
-The tokens will be displayed with their respective icons.
+Frontend: React.js, Bootstrap, CSS3
 
-2. Wallet Page
-Objective: Allow users to view their cryptocurrency balance and the USD value of their balance once MetaMask is connected.
+Routing: React Router DOM
 
-Features:
-MetaMask Integration:
+State Management: React Context API
 
-If MetaMask is disconnected, show a "Connect Wallet" button.
+Backend: Django REST Framework (JWT Auth)
 
-If MetaMask is connected, show:
+Authentication: JWT tokens (access + refresh)
 
-Cryptocurrency Amount (ETH or other token depending on user selection).
+Icons: Custom SVG icons + Bootstrap Icons
 
-USD Value: The equivalent of the cryptocurrency in USD.
+APIs:
 
-Components:
-Connect Wallet Button: Allows users to connect their MetaMask wallet.
+Energiswap API
+ → Token Data
 
-Account Information: Display the connected account, balance in cryptocurrency, and its equivalent in USD.
+CoinGecko API
+ → Market Data
 
-Flow:
-When the Wallet tab is clicked, check if MetaMask is connected.
+CryptoCompare API
+ → Crypto News
 
-If MetaMask is not connected:
+Exchange Rate API
+ → USD → INR Conversion
 
-Display the "Connect Wallet" button.
+📂 Project Structure
+src/
+├── components/
+│   ├── Home.js              # Token listing with sorting
+│   ├── Cryptocurrency.js    # Detailed crypto information
+│   ├── Wallet.js            # MetaMask integration
+│   ├── News.js              # Crypto news with pagination
+│   ├── Navbar.js            # Navigation with theme toggle
+│   ├── Footer.js            # Site footer
+│   └── FloatingLogos.js     # Animated background
+├── context/
+│   ├── AuthContext.js       # Authentication state management
+│   └── ThemeContext.js      # Theme state management
+├── pages/
+│   ├── Login.js             # User login
+│   └── Register.js          # User registration
+├── App.js                   # Main app component
+└── App.css                  # Global styles with theme support
 
-If MetaMask is connected:
+🔌 API Integration
+1. Authentication API (Django REST Backend)
 
-Fetch and display the connected account.
+Base URL: https://blogmedia.onrender.com/api
 
-Display the user’s cryptocurrency balance (ETH, or other token).
+POST /auth/register/ → Register user
 
-Fetch the USD equivalent of the cryptocurrency balance.
+POST /auth/login/ → Login user
 
-Show both the cryptocurrency balance and its USD value on the page.
+POST /auth/token/refresh/ → Refresh JWT token
 
+GET /auth/user/ → Fetch current user
+
+2. CoinGecko API (Market Data)
+
+https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd
+
+Fetch prices, market cap, volume, price change %
+
+Used for Home page token table
+
+3. Exchange Rate API (USD → INR Conversion)
+
+https://api.exchangerate.host/latest?base=USD&symbols=INR
+
+Convert all USD values to INR
+
+4. CryptoCompare API (News)
+
+https://min-api.cryptocompare.com/data/v2/news/
+
+Fetch news (title, description, source, date, image)
+
+🏗️ Application Flows
+🔑 Authentication Flow
+
+User registers/logs in via Django REST API.
+
+JWT access + refresh tokens stored securely.
+
+All API calls include Authorization: Bearer <token>.
+
+Auto-refresh tokens on expiry.
+
+📊 Cryptocurrency Data Flow
+
+Fetch data from CoinGecko API.
+
+Convert USD prices → INR via Exchange Rate API.
+
+Show in Home table (sortable by price, symbol, name).
+
+👛 Wallet Flow (MetaMask)
+
+User clicks Connect Wallet.
+
+App fetches wallet address & balances via MetaMask.
+
+Balances converted to USD (CoinGecko) + INR (ExchangeRate API).
+
+Display ETH + token balances in Wallet page.
+
+📰 News Flow
+
+Fetch crypto news from CryptoCompare API.
+
+Display in responsive cards with pagination/infinite scroll.
+
+Auto-adapt theme (light/dark).
+
+🎨 Design & UX
+
+Theme: Light/Dark with smooth transition
+
+Visuals: Floating crypto logos, gradient backgrounds
+
+Responsive: Mobile-first design (Bootstrap grid + CSS media queries)
+
+Animations: Hover effects, loading spinners
+
+🔒 Security
+
+Password hashing + JWT authentication
+
+Access tokens stored in memory, refresh tokens in HTTP-only cookies
+
+CORS configured for APIs
+
+Input validation & XSS protection
